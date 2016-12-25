@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">About Countiries</string>
+    <string name="open">Open</string>
+    <string name="close">Close</string>
+    <string-array name="countries">
+        <item>France</item>
+        <item>Tunisia</item>
+        <item>Algeria</item>
+    </string-array>
+
+</resources>
