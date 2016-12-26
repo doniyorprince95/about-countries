@@ -1,22 +1,25 @@
 package com.sidki.aboutcountiries;
 
-import android.content.Context;
 import android.content.res.Resources;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.view.LayoutInflater;
+import android.util.Log;
 import android.view.MenuItem;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
-import android.widget.ImageView;
 import android.widget.ListView;
-import android.widget.TextView;
 
 import com.sidki.com.aboutcountries.libraries.CountrySync;
+
+import org.json.JSONArray;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.MalformedURLException;
+import java.net.URL;
 
 public class MainActivity extends AppCompatActivity {
     private DrawerLayout myDrawer;
@@ -29,7 +32,6 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
         myDrawer = (DrawerLayout)findViewById(R.id.drawer_layout);
         country_list = (ListView)findViewById(R.id.listView);
         toggle = new ActionBarDrawerToggle(this, myDrawer, R.string.open, R.string.close);
@@ -44,7 +46,12 @@ public class MainActivity extends AppCompatActivity {
         CountriesAdapter ca = new CountriesAdapter(this, countries, images);
         country_list.setAdapter(ca);
         CountrySync sync = new CountrySync();
-        sync.getAllCountries();
+
+    }
+
+    public void getAllCountries(){
+        DownloadJSON download = new DownloadJSON();
+        download.execute();
     }
 
     @Override
@@ -54,43 +61,35 @@ public class MainActivity extends AppCompatActivity {
         }
         return super.onOptionsItemSelected(item);
     }
-    class CountryHolder{
-        ImageView countryImg;
-        TextView countryName;
 
-        CountryHolder(View v){
-            countryImg = (ImageView)v.findViewById(R.id.country_image);
-            countryName = (TextView)v.findViewById(R.id.country_name);
-        }
-    }
-    class CountriesAdapter extends ArrayAdapter<String>{
-        Context context;
-        int[] countryImages;
-        String[] countryArray;
-        public CountriesAdapter(Context c, String[] countries, int[] images){
-            super(c, R.layout.elem_pays, R.id.country_name, countries);
-            this.context = c;
-            this.countryArray= countries;
-            this.countryImages = images;
-        }
-
+    class DownloadJSON extends AsyncTask<Void,Void,Void> {
+        public static final String SERVER_URL="https://restcountries.eu/rest/v1/all";
+        public String result;
         @Override
-        public View getView(int position, View convertView, ViewGroup parent) {
-
-            View row = convertView;
-            CountryHolder holder = null;
-            if(row ==null){
-                LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                row = inflater.inflate(R.layout.elem_pays,parent,false);
-                holder = new CountryHolder(row);
-                row.setTag(holder);
-            }else{
-                holder = (CountryHolder) row.getTag();
+        protected void onPostExecute(Void aVoid) {
+            //super.onPostExecute(aVoid);
+            try {
+                JSONArray array = new JSONArray(result);
+                CountrySync sync = new CountrySync();
+                sync.fillCountriesArray(array);
+            } catch (Throwable t) {
+                Log.e("My App", "Could not parse malformed JSON: \"" + result + "\"");
             }
+        }
+        @Override
+        protected Void doInBackground(Void... params) {
+            try {
+                URL theUrl = new URL(SERVER_URL);
+                BufferedReader reader = new BufferedReader(new InputStreamReader(theUrl.openStream(),"UTF-8"));
+                String jsonString = reader.readLine();
+                result = jsonString;
 
-            holder.countryImg.setImageResource(countryImages[position]);
-            holder.countryName.setText(countryArray[position]);
-            return row;
+            }catch (MalformedURLException e){
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return null;
         }
     }
 }
