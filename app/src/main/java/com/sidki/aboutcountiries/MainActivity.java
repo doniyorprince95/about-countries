@@ -11,6 +11,7 @@ import android.util.Log;
 import android.view.MenuItem;
 import android.widget.ListView;
 
+import com.sidki.aboutcountries.models.Country;
 import com.sidki.com.aboutcountries.libraries.CountrySync;
 
 import org.json.JSONArray;
@@ -20,13 +21,16 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
     private DrawerLayout myDrawer;
     private ActionBarDrawerToggle toggle;
     private Toolbar toolbar;
-    String[] countries;
+    ArrayList countries;
     ListView country_list;
+    ArrayList<Country> items = new ArrayList<Country>();
+
     int[] images = {R.drawable.countries, R.mipmap.ic_account_circle_black_24dp, R.mipmap.ic_home_black_24dp};
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,12 +44,8 @@ public class MainActivity extends AppCompatActivity {
         myDrawer.setDrawerListener(toggle);
         toggle.syncState();
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-
-        Resources r = getResources();
-        countries = r.getStringArray(R.array.countries);
-        CountriesAdapter ca = new CountriesAdapter(this, countries, images);
-        country_list.setAdapter(ca);
-        CountrySync sync = new CountrySync();
+        DownloadJSON downloadJSON = new DownloadJSON();
+        downloadJSON.execute();
 
     }
 
@@ -71,7 +71,10 @@ public class MainActivity extends AppCompatActivity {
             try {
                 JSONArray array = new JSONArray(result);
                 CountrySync sync = new CountrySync();
-                sync.fillCountriesArray(array);
+                Resources r = getResources();
+                countries = sync.fillCountriesArray(array);
+                CountriesAdapter ca = new CountriesAdapter(MainActivity.this, countries, images);
+                country_list.setAdapter(ca);
             } catch (Throwable t) {
                 Log.e("My App", "Could not parse malformed JSON: \"" + result + "\"");
             }
